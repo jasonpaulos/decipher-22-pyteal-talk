@@ -14,6 +14,9 @@ jobs:
     strategy:
       matrix:
         python: ["3.10"]
+    defaults:
+      run:
+        working-directory: ./contract
     steps:
       - run: python3 --version
       - name: Check out code
@@ -21,11 +24,31 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install python dependencies
-        run: pip install -r contract/requirements.txt
+        run: pip install -r requirements.txt
       - name: Lint
         run: |
-          black --check contract
-          flake8 --config contract/.flake8 contract
-          mypy contract
+          black --check .
+          flake8
+          mypy .
       - name: Test
-        run: pytest contract
+        run: pytest
+  
+  test-client:
+    runs-on: ubuntu-20.04
+    container: node:${{ matrix.node }}
+    strategy:
+      matrix:
+        node: ["18"]
+    defaults:
+      run:
+        working-directory: ./client
+    steps:
+      - run: node --version && npm --version
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install node dependencies
+        run: npm ci
+      - name: Test
+        run: npm test
