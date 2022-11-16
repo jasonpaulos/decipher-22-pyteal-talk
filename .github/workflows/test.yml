@@ -1,0 +1,31 @@
+name: "Test workflow"
+on:
+  pull_request:
+  push:
+    tags:
+      - v**
+    branches:
+      - main
+
+jobs:
+  test-contract:
+    runs-on: ubuntu-20.04
+    container: python:${{ matrix.python }}
+    strategy:
+      matrix:
+        python: ["3.10"]
+    steps:
+      - run: python3 --version
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Install python dependencies
+        run: pip install -r contract/requirements.txt
+      - name: Lint
+        run: |
+          black --check contract
+          flake8 --config contract/.flake8 contract
+          mypy contract
+      - name: Test
+        run: pytest contract

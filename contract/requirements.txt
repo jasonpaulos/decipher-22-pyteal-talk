@@ -1,0 +1,5 @@
+pyteal==0.20.1
+black==22.10.0
+flake8==4.0.1
+mypy==0.991
+pytest==7.2.0
