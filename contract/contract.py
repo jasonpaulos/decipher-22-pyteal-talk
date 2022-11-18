@@ -22,9 +22,7 @@ open_key = Bytes(b"open")
 resubmit_key = Bytes(b"resubmit")
 question_key = Bytes(b"question")
 option_name_prefix = b"option_name_"
-option_name_keys = [
-    Bytes(option_name_prefix + bytes([i])) for i in range(NUM_OPTIONS)
-]
+option_name_keys = [Bytes(option_name_prefix + bytes([i])) for i in range(NUM_OPTIONS)]
 option_count_prefix = b"option_count_"
 option_count_keys = [
     Bytes(option_count_prefix + bytes([i])) for i in range(NUM_OPTIONS)
@@ -33,7 +31,7 @@ option_count_keys = [
 
 @router.method(no_op=CallConfig.CREATE)
 def create(
-    question: abi.String, options: abi.StaticArray[abi.String, Literal[NUM_OPTIONS]], can_resubmit: abi.Bool # type: ignore[valid-type]
+    question: abi.String, options: abi.StaticArray[abi.String, Literal[NUM_OPTIONS]], can_resubmit: abi.Bool  # type: ignore[valid-type]
 ) -> Expr:
     """Create a new polling application.
 
@@ -52,8 +50,9 @@ def create(
                 name.set(options[i]),
                 App.globalPut(option_name_keys[i], name.get()),
                 App.globalPut(option_count_keys[i], Int(0)),
-            ) for i in range(NUM_OPTIONS)
-        ]
+            )
+            for i in range(NUM_OPTIONS)
+        ],
     )
 
 
@@ -131,7 +130,7 @@ class PollStatus(abi.NamedTuple):
     question: abi.Field[abi.String]
     can_resubmit: abi.Field[abi.Bool]
     is_open: abi.Field[abi.Bool]
-    results: abi.Field[abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]]] # type: ignore[valid-type]
+    results: abi.Field[abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]]]  # type: ignore[valid-type]
 
 
 @router.method
@@ -152,7 +151,7 @@ def status(*, output: PollStatus) -> Expr:
     partial_results = [
         abi.make(abi.Tuple2[abi.String, abi.Uint64]) for i in range(NUM_OPTIONS)
     ]
-    results = abi.make(abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]]) # type: ignore[valid-type]
+    results = abi.make(abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]])  # type: ignore[valid-type]
     return Seq(
         question.set(App.globalGet(question_key)),
         can_resubmit.set(App.globalGet(resubmit_key)),
@@ -162,7 +161,8 @@ def status(*, output: PollStatus) -> Expr:
                 option_name.set(App.globalGet(option_name_keys[i])),
                 option_count.set(App.globalGet(option_count_keys[i])),
                 partial_results[i].set(option_name, option_count),
-            ) for i in range(NUM_OPTIONS)
+            )
+            for i in range(NUM_OPTIONS)
         ],
         results.set(partial_results),
         output.set(question, can_resubmit, is_open, results),
