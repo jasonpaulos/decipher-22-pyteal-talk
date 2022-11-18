@@ -46,6 +46,8 @@ jobs:
       - run: node --version && npm --version
       - name: Install node dependencies
         run: npm ci
+      - name: Generate
+        run: npm run generate
       - name: Type check
         run: npx tsc
       - name: Test
