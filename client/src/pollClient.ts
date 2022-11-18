@@ -11,6 +11,13 @@ export interface PollStatus {
     isAdmin: boolean
 }
 
+export interface PollAccountBalance {
+    balance: number,
+    minBalance: number,
+    numBoxes: number,
+    boxBytes: number,
+}
+
 export class PollClient {
 
     constructor(public algod: algosdk.Algodv2, public appID: number, public sender: string, public signer: algosdk.TransactionSigner) {
@@ -41,6 +48,16 @@ export class PollClient {
             results,
             isAdmin: this.sender === appInfo["params"]["creator"]
         };
+    }
+
+    async pollAccountBalance(): Promise<PollAccountBalance> {
+        const appAddr = algosdk.getApplicationAddress(this.appID);
+        const info = await this.algod.accountInformation(appAddr).exclude("all").do();
+        const balance = info["amount"] as number;
+        const minBalance = info["min-balance"] as number;
+        const numBoxes = (info["total-boxes"] || 0) as number;
+        const boxBytes = (info["total-box-bytes"] || 0) as number;
+        return { balance, minBalance, numBoxes, boxBytes };
     }
 
     async mySubmittedOption(): Promise<number | undefined> {
@@ -103,13 +120,15 @@ export class PollClient {
         await composer.execute(this.algod, 10);
     }
 
-    async submitResponse(appID: number, choice: number) {
+    async submitResponse(choice: number) {
         const composer = new algosdk.AtomicTransactionComposer();
+        const address = algosdk.decodeAddress(this.sender).publicKey;
         const suggestedParams = await this.algod.getTransactionParams().do();
         composer.addMethodCall({
             appID: this.appID,
             method: contractDescription.getMethodByName("submit"),
             methodArgs: [choice],
+            boxes: [{appIndex: 0, name: address }],
             sender: this.sender,
             signer: this.signer,
             suggestedParams,

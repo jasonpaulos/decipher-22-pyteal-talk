@@ -49,7 +49,6 @@ async function createPoll(data: FormData) {
         options.push(entry);
     }
     const resubmit = data.get("resubmit"); // null when unchecked, "on" when checked
-    const funding = data.get("funding");
 
     const appID = await PollClient.createPoll({
         algod,
@@ -73,7 +72,7 @@ export function Home() {
             <Form method="post">
                 <input type="hidden" name="kind" value="join" />
                 <label>
-                    ID: <input type="number" name="appID" required />
+                    ID: <input type="number" name="appID" min={0} max={Number.MAX_SAFE_INTEGER} required />
                 </label>
                 <button type="submit">Join</button>
             </Form>
@@ -97,11 +96,6 @@ export function Home() {
                 <p>
                     <label>
                     Can resubmit: <input type="checkbox" name="resubmit" />
-                    </label>
-                </p>
-                <p>
-                    <label>
-                    Initial funding (in microAlgos): <input type="number" name="funding" defaultValue={0} />
                     </label>
                 </p>
                 <button type="submit">Create</button>

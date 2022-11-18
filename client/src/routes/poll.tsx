@@ -1,11 +1,12 @@
 import React from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher } from "react-router-dom";
 import * as algosdk from "algosdk";
-import { PollClient, PollStatus } from '../pollClient';
+import { NUM_OPTIONS, PollClient, PollAccountBalance, PollStatus } from '../pollClient';
 import { algod, account } from './home';
 
 interface PollData {
     client: PollClient,
+    balance?: PollAccountBalance
     status: PollStatus,
     submitted: number | undefined
 }
@@ -20,11 +21,21 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<PollData> 
         client.pollStatus(),
         client.mySubmittedOption()
     ]);
-    return { client, status, submitted };
+    let balance: PollAccountBalance | undefined = undefined;
+    if (status.isAdmin) {
+        balance = await client.pollAccountBalance();
+    }
+    return { client, balance, status, submitted };
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
     const formData = await request.formData();
+
+    const { appID } = params;
+    if (!appID) {
+        throw new Response("appID missing from params", { status: 400 });
+    }
+    const client = new PollClient(algod, parseInt(appID, 10), account.addr, algosdk.makeBasicAccountTransactionSigner(account));
 
     const kind = formData.get("kind");
     if (!kind) {
@@ -33,18 +44,50 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     switch(kind.valueOf()) {
         case "vote":
-            return submitPoll(formData);
+            return submitPoll(client, formData);
+        case "open":
+            return openOrClosePoll(client, true);
+        case "close":
+            return openOrClosePoll(client, false);
+        case "fund":
+            return fundPoll(client, formData);
         default:
             throw new Response(`Unexpected kind: ${kind.valueOf()}`, { status: 400 });
     }
 }
 
-async function submitPoll(data: FormData) {
-    // TODO: submit vote
+function submitPoll(client: PollClient, data: FormData) {
+    const selected = data.get("option");
+    if (!selected) {
+        throw new Response("option missing from params", { status: 400 });
+    }
+    const selectedIndex = parseInt(selected.valueOf() as string, 10);
+    if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= NUM_OPTIONS) {
+        throw new Response(`Unexpected option: ${selected.valueOf()}`, { status: 400 });
+    }
+    return client.submitResponse(selectedIndex);
+}
+
+function openOrClosePoll(client: PollClient, open: boolean) {
+    if (open) {
+        return client.openPoll();
+    } else {
+        return client.closePoll();
+    }
+}
+
+function fundPoll(client: PollClient, data: FormData) {
+    const amount = data.get("amount");
+    if (!amount) {
+        throw new Response("amount missing from params", { status: 400 });
+    }
+    const amountStr = amount.valueOf() as string;
+    const amountMicroAlgos = algosdk.algosToMicroalgos(parseFloat(amountStr));
+    return client.fundPollApp(amountMicroAlgos);
 }
 
 export function Poll() {
-    const { client, status, submitted } = useLoaderData() as PollData;
+    const { client, status, submitted, balance } = useLoaderData() as PollData;
     const fetcher = useFetcher();
     const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
     return (
@@ -52,7 +95,7 @@ export function Poll() {
             <p>Poll #{client.appID}</p>
             <p>Question: {status.question}</p>
             <p>The poll is {status.isOpen ? "open" : "closed"}.</p>
-            <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not"} submit again.`}</p>
+            <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not "}submit again.`}</p>
             <fetcher.Form method="post">
                 <input type="hidden" name="kind" value="vote" />
                 <fieldset disabled={!votingEnabled}>
@@ -79,6 +122,22 @@ export function Poll() {
                 <fetcher.Form method="post">
                     <input type="hidden" name="kind" value="close" />
                     <button type="submit" disabled={!status.isOpen}>Close</button>
+                </fetcher.Form>
+                <p>
+                    Poll account balance: {algosdk.microalgosToAlgos(balance?.balance!)} Algos
+                </p>
+                <p>
+                    Poll account minimum balance: {algosdk.microalgosToAlgos(balance?.minBalance!)} Algos
+                </p>
+                <p>
+                    Poll account boxes: {balance?.numBoxes} boxes, {balance?.boxBytes} total bytes
+                </p>
+                <fetcher.Form method="post">
+                    <input type="hidden" name="kind" value="fund" />
+                    <label>
+                        Fund poll account: <input type="number" name="amount" min={0} step={0.001} defaultValue={0} />
+                    </label>
+                    <button type="submit">Send Algos</button>
                 </fetcher.Form>
             </div>
         </>
