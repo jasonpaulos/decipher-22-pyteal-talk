@@ -98,7 +98,7 @@ def submit(choice: abi.Uint8) -> Expr:
     new_choice_count_key = ScratchVar(TealType.bytes)
     old_choice_count_key = ScratchVar(TealType.bytes)
     return Seq(
-        Assert(choice.get() < Int(3)),
+        Assert(choice.get() < Int(NUM_OPTIONS)),
         new_choice_count_key.store(
             SetByte(option_count_keys[0], Int(len(option_count_prefix)), choice.get())
         ),

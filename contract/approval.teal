@@ -397,7 +397,7 @@ retsub
 submit_3:
 store 36
 load 36
-int 3
+int 7
 <
 assert
 byte 0x6f7074696f6e5f636f756e745f00
