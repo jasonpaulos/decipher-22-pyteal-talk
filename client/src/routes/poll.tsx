@@ -90,6 +90,7 @@ export function Poll() {
     const { client, status, submitted, balance } = useLoaderData() as PollData;
     const fetcher = useFetcher();
     const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
+    const totalSubmissions = status.results.map(({count}) => count).reduce((a, b) => a + b, 0);
     return (
         <>
             <p>Poll #{client.appID}</p>
@@ -113,6 +114,17 @@ export function Poll() {
                 </fieldset>
                 <button type="submit" disabled={!votingEnabled}>Submit</button>
             </fetcher.Form>
+            <div hidden={submitted === undefined}>
+                <p>Results</p>
+                {
+                    status.results.map(({ option, count }, index) => (
+                        <div key={`${option}:${index}:${count}`}>
+                            <p>{option}: {count} ({(100*count/totalSubmissions).toFixed(0)}%)</p>
+                        </div>
+                    ))
+                }
+                <p>Total submissions: {totalSubmissions}</p>
+            </div>
             <div hidden={!status.isAdmin}>
                 <p>Admin Panel</p>
                 <fetcher.Form method="post">
