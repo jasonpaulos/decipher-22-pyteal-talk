@@ -8,6 +8,7 @@ export interface PollStatus {
     canResubmit: boolean
     isOpen: boolean
     results: Array<{ option: string, count: number }>
+    isAdmin: boolean
 }
 
 export class PollClient {
@@ -38,6 +39,7 @@ export class PollClient {
             canResubmit: !!data["resubmit"],
             isOpen: !!data["open"],
             results,
+            isAdmin: this.sender === appInfo["params"]["creator"]
         };
     }
 

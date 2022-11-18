@@ -46,28 +46,41 @@ async function submitPoll(data: FormData) {
 export function Poll() {
     const { client, status, submitted } = useLoaderData() as PollData;
     const fetcher = useFetcher();
+    const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
     return (
         <>
             <p>Poll #{client.appID}</p>
-            <p>{status.question}</p>
-            <p>{submitted === undefined ? "You have not yet voted in this poll." : "You have already voted in this poll."}</p>
+            <p>Question: {status.question}</p>
+            <p>The poll is {status.isOpen ? "open" : "closed"}.</p>
+            <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not"} submit again.`}</p>
             <fetcher.Form method="post">
                 <input type="hidden" name="kind" value="vote" />
-                <fieldset>
+                <fieldset disabled={!votingEnabled}>
                     <legend>Choose an option:</legend>
                     {
                         status.results.map(({ option }, index) => (
                             <div key={`${option}:${index}`}>
                                 <label>
-                                    <input type="radio" name="option" value={index} />
+                                    <input type="radio" name="option" value={index} defaultChecked={submitted === index} />
                                     {option}
                                 </label>
                             </div>
                         ))
                     }
                 </fieldset>
-                <button type="submit">Submit</button>
+                <button type="submit" disabled={!votingEnabled}>Submit</button>
             </fetcher.Form>
+            <div hidden={!status.isAdmin}>
+                <p>Admin Panel</p>
+                <fetcher.Form method="post">
+                    <input type="hidden" name="kind" value="open" />
+                    <button type="submit" disabled={status.isOpen}>Open</button>
+                </fetcher.Form>
+                <fetcher.Form method="post">
+                    <input type="hidden" name="kind" value="close" />
+                    <button type="submit" disabled={!status.isOpen}>Close</button>
+                </fetcher.Form>
+            </div>
         </>
   );
 }
