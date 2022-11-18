@@ -5,7 +5,12 @@
             "name": "create",
             "args": [
                 {
-                    "type": "string[3]",
+                    "type": "string",
+                    "name": "question",
+                    "desc": "The question this poll is asking."
+                },
+                {
+                    "type": "string[7]",
                     "name": "options",
                     "desc": "A list of options for the poll. This list should not contain duplicate entries."
                 },
@@ -54,8 +59,8 @@
             "name": "status",
             "args": [],
             "returns": {
-                "type": "(bool,bool,(string,uint64)[3])",
-                "desc": "A tuple containing the following information, in order: whether the poll allows resubmission, whether the poll is open, and an array of the poll's current results. This array contains one entry per option, and each entry is a tuple of that option's value and the number of accounts who have voted for it."
+                "type": "(string,bool,bool,(string,uint64)[7])",
+                "desc": "A tuple containing the following information, in order: the question is poll is asking, whether the poll allows resubmission, whether the poll is open, and an array of the poll's current results. This array contains one entry per option, and each entry is a tuple of that option's value and the number of accounts who have voted for it."
             },
             "desc": "Get the status of this poll."
         }
