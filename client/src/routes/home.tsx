@@ -1,9 +1,9 @@
 import React from 'react';
 import { Form, ActionFunctionArgs, redirect } from "react-router-dom";
 import * as algosdk from "algosdk";
-import { PollClient } from '../pollClient';
+import { PollClient, NUM_OPTIONS } from '../pollClient';
 
-export const algod = new algosdk.Algodv2("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "http://localhost:4001", "");
+export const algod = new algosdk.Algodv2("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "http://localhost", 4001);
 
 // NJTWFPVLRCFXP5LHPDCANCF66PHZ5VBKDXNCMMIJ4GJJXBUXXABCGPWLDQ
 export const account = algosdk.mnemonicToSecretKey("decide afford bread drastic waste pottery lawn amused hip clown tiger silly cheap visit mutual vital spider goose music bean left obscure truly absent nuclear");
@@ -36,33 +36,31 @@ function joinPoll(data: FormData) {
 }
 
 async function createPoll(data: FormData) {
-    const option1 = data.get("option1");
-    const option2 = data.get("option2");
-    const option3 = data.get("option3");
+    const question = data.get("question");
+    if (!question) {
+        throw new Response(`Question is not present`, { status: 400 });
+    }
+    const options: FormDataEntryValue[] = [];
+    for (let i = 0; i < NUM_OPTIONS; i++) {
+        const entry = data.get(`option${i}`);
+        if (!entry) {
+            throw new Response(`Option ${i} is not present`, { status: 400 });
+        }
+        options.push(entry);
+    }
     const resubmit = data.get("resubmit"); // null when unchecked, "on" when checked
     const funding = data.get("funding");
 
-    if (!option1 || !option2 || !option3) {
-        throw new Response("Options are required", { status: 400 });
-    }
-
-    alert(JSON.stringify({
-        option1, option2, option3, resubmit, funding
-    }))
-
-    const client = await PollClient.createPoll({
+    const appID = await PollClient.createPoll({
         algod,
         sender: account.addr,
         signer: algosdk.makeBasicAccountTransactionSigner(account),
-        canResubmit: resubmit === "on",
-        options: [
-            option1.valueOf() as string,
-            option2.valueOf() as string,
-            option3.valueOf() as string
-        ]
+        question: question.valueOf() as string,
+        canResubmit: !!resubmit,
+        options: options.map(option => option.valueOf() as string)
     });
 
-    return redirect(`poll/${client.appID}`);
+    return redirect(`poll/${appID}`);
 }
 
 export function Home() {
@@ -84,10 +82,18 @@ export function Home() {
             <h2>Create a poll</h2>
             <Form method="post">
                 <input type="hidden" name="kind" value="create" />
-                <p>Options:</p>
-                <p><input type="text" name="option1" required /></p>
-                <p><input type="text" name="option2" required /></p>
-                <p><input type="text" name="option3" required /></p>
+                <p>
+                    <label>
+                    Question: <input type="text" name="question" required />
+                    </label>
+                </p>
+                {range(NUM_OPTIONS).map((i) => (
+                    <p key={i}>
+                        <label>
+                            Option {i+1}: <input type="text" name={`option${i}`} required />
+                        </label>
+                    </p>
+                ))}
                 <p>
                     <label>
                     Can resubmit: <input type="checkbox" name="resubmit" />
@@ -103,4 +109,12 @@ export function Home() {
         </div>
     </>
   );
+}
+
+function range(max: number): number[] {
+    let nums: number[] = [];
+    for (let i = 0; i < max; i++) {
+        nums[i] = i;
+    }
+    return nums;
 }

@@ -5,7 +5,7 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import { Root } from './routes/root';
 import { Home, action as homeAction } from './routes/home';
-import { Poll, loader as pollLoader } from './routes/poll';
+import { Poll, loader as pollLoader, action as pollAction } from './routes/poll';
 
 const router = createHashRouter([
   {
@@ -20,6 +20,7 @@ const router = createHashRouter([
       {
         path: "poll/:appID",
         loader: pollLoader,
+        action: pollAction,
         element: <Poll />
       }
     ]
