@@ -55,7 +55,7 @@ jobs:
       - name: Test
         run: npm test
       - name: Deploy
-        if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: client/build
