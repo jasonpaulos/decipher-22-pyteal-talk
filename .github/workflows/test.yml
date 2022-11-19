@@ -37,6 +37,7 @@ jobs:
     strategy:
       matrix:
         node: ["18"]
+    needs: ['test-contract']
     defaults:
       run:
         working-directory: ./client
@@ -50,5 +51,11 @@ jobs:
         run: npm run generate
       - name: Type check
         run: npx tsc
+      - name: Build
+        run: npm run build
       - name: Test
         run: npm test
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: build

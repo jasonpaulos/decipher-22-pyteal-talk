@@ -1,6 +1,7 @@
 {
   "name": "poll-client",
   "version": "0.1.0",
+  "homepage": "https://jasonpaulos.github.io/decipher-22-pyteal-talk",
   "private": true,
   "dependencies": {
     "@babel/core": "^7.16.0",
