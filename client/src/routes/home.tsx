@@ -1,13 +1,8 @@
 import React from 'react';
-import { Form, ActionFunctionArgs, redirect } from "react-router-dom";
+import { Form, ActionFunctionArgs, useNavigation, redirect } from "react-router-dom";
 import * as algosdk from "algosdk";
 import { PollClient, NUM_OPTIONS } from '../pollClient';
-
-export const algod = new algosdk.Algodv2("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "http://localhost", 4001);
-
-// NJTWFPVLRCFXP5LHPDCANCF66PHZ5VBKDXNCMMIJ4GJJXBUXXABCGPWLDQ
-export const account = algosdk.mnemonicToSecretKey("decide afford bread drastic waste pottery lawn amused hip clown tiger silly cheap visit mutual vital spider goose music bean left obscure truly absent nuclear");
-
+import { getAlgod, getAccount } from './settings';
 
 export async function action({ request }: ActionFunctionArgs) {
     const formData = await request.formData();
@@ -50,8 +45,9 @@ async function createPoll(data: FormData) {
     }
     const resubmit = data.get("resubmit"); // null when unchecked, "on" when checked
 
+    const account = getAccount();
     const appID = await PollClient.createPoll({
-        algod,
+        algod: getAlgod(),
         sender: account.addr,
         signer: algosdk.makeBasicAccountTransactionSigner(account),
         question: question.valueOf() as string,
@@ -63,10 +59,17 @@ async function createPoll(data: FormData) {
 }
 
 export function Home() {
+    const navigation = useNavigation();
+    let creationPending = false;
+    if (navigation.state !== "idle" && navigation.formData) {
+        const kind = navigation.formData.get("kind");
+        if (kind && kind.valueOf() === "create") {
+            creationPending = true;
+        }
+    }
   return (
     <>
         <h2>Home</h2>
-        {/* <p><Link to="/poll">Take me to a poll</Link></p> */}
         <div>
             <h2>Join a poll</h2>
             <Form method="post">
@@ -83,22 +86,25 @@ export function Home() {
                 <input type="hidden" name="kind" value="create" />
                 <p>
                     <label>
-                    Question: <input type="text" name="question" required />
+                    Question: <input type="text" name="question" disabled={creationPending} required />
                     </label>
                 </p>
-                {range(NUM_OPTIONS).map((i) => (
-                    <p key={i}>
-                        <label>
-                            Option {i+1}: <input type="text" name={`option${i}`} required />
-                        </label>
-                    </p>
-                ))}
+                <fieldset disabled={creationPending}>
+                    <legend>Options:</legend>
+                    {range(NUM_OPTIONS).map((i) => (
+                        <p key={i}>
+                            <label>
+                                Option {i+1}: <input type="text" name={`option${i}`} required />
+                            </label>
+                        </p>
+                    ))}
+                </fieldset>
                 <p>
                     <label>
-                    Can resubmit: <input type="checkbox" name="resubmit" />
+                    Can resubmit: <input type="checkbox" name="resubmit" disabled={creationPending} />
                     </label>
                 </p>
-                <button type="submit">Create</button>
+                <button type="submit" disabled={creationPending}>{creationPending ? "Creating..." : "Create"}</button>
             </Form>
         </div>
     </>

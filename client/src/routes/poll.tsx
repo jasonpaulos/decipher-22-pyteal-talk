@@ -2,7 +2,7 @@ import React from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher } from "react-router-dom";
 import * as algosdk from "algosdk";
 import { NUM_OPTIONS, PollClient, PollAccountBalance, PollStatus } from '../pollClient';
-import { algod, account } from './home';
+import { getAlgod, getAccount } from './settings';
 
 interface PollData {
     client: PollClient,
@@ -16,7 +16,8 @@ export async function loader({ params }: LoaderFunctionArgs): Promise<PollData> 
         throw new Response("appID missing", { status: 400 });
     }
     const appID = parseInt(params.appID, 10)
-    const client = new PollClient(algod, appID, account.addr, algosdk.makeBasicAccountTransactionSigner(account));
+    const account = getAccount();
+    const client = new PollClient(getAlgod(), appID, account.addr, algosdk.makeBasicAccountTransactionSigner(account));
     const [status, submitted] = await Promise.all([
         client.pollStatus(),
         client.mySubmittedOption()
@@ -35,7 +36,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
     if (!appID) {
         throw new Response("appID missing from params", { status: 400 });
     }
-    const client = new PollClient(algod, parseInt(appID, 10), account.addr, algosdk.makeBasicAccountTransactionSigner(account));
+    const account = getAccount();
+    const client = new PollClient(getAlgod(), parseInt(appID, 10), account.addr, algosdk.makeBasicAccountTransactionSigner(account));
 
     const kind = formData.get("kind");
     if (!kind) {
@@ -91,6 +93,31 @@ export function Poll() {
     const fetcher = useFetcher();
     const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
     const totalSubmissions = status.results.map(({count}) => count).reduce((a, b) => a + b, 0);
+
+    let submissionPending = false;
+    let openPending = false;
+    let closePending = false;
+    let fundPending = false;
+    if (fetcher.state !== "idle" && fetcher.formData) {
+        const kind = fetcher.formData.get("kind");
+        if (kind) {
+            switch(kind.valueOf()) {
+                case "vote":
+                    submissionPending = true;
+                    break;
+                case "open":
+                    openPending = true;
+                    break;
+                case "close":
+                    closePending = true;
+                    break;
+                case "fund":
+                    fundPending = true;
+                    break;
+            }
+        }
+    }
+
     return (
         <>
             <p>Poll #{client.appID}</p>
@@ -99,7 +126,7 @@ export function Poll() {
             <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not "}submit again.`}</p>
             <fetcher.Form method="post">
                 <input type="hidden" name="kind" value="vote" />
-                <fieldset disabled={!votingEnabled}>
+                <fieldset disabled={!votingEnabled || submissionPending}>
                     <legend>Choose an option:</legend>
                     {
                         status.results.map(({ option }, index) => (
@@ -112,7 +139,7 @@ export function Poll() {
                         ))
                     }
                 </fieldset>
-                <button type="submit" disabled={!votingEnabled}>Submit</button>
+                <button type="submit" disabled={!votingEnabled || submissionPending}>{submissionPending ? "Submitting..." : "Submit"}</button>
             </fetcher.Form>
             <div hidden={submitted === undefined}>
                 <p>Results</p>
@@ -125,33 +152,33 @@ export function Poll() {
                 }
                 <p>Total submissions: {totalSubmissions}</p>
             </div>
-            <div hidden={!status.isAdmin}>
+            {status.isAdmin && !!balance && <div>
                 <p>Admin Panel</p>
                 <fetcher.Form method="post">
                     <input type="hidden" name="kind" value="open" />
-                    <button type="submit" disabled={status.isOpen}>Open</button>
+                    <button type="submit" disabled={status.isOpen || openPending}>{openPending ? "Opening..." : "Open"}</button>
                 </fetcher.Form>
                 <fetcher.Form method="post">
                     <input type="hidden" name="kind" value="close" />
-                    <button type="submit" disabled={!status.isOpen}>Close</button>
+                    <button type="submit" disabled={!status.isOpen || closePending}>{closePending ? "Closing..." : "Close"}</button>
                 </fetcher.Form>
                 <p>
-                    Poll account balance: {algosdk.microalgosToAlgos(balance?.balance!)} Algos
+                    Poll account balance: {algosdk.microalgosToAlgos(balance.balance)} Algos
                 </p>
                 <p>
-                    Poll account minimum balance: {algosdk.microalgosToAlgos(balance?.minBalance!)} Algos
+                    Poll account minimum balance: {algosdk.microalgosToAlgos(balance.minBalance)} Algos
                 </p>
                 <p>
-                    Poll account boxes: {balance?.numBoxes} boxes, {balance?.boxBytes} total bytes
+                    Poll account boxes: {balance.numBoxes} boxes, {balance.boxBytes} total bytes
                 </p>
                 <fetcher.Form method="post">
                     <input type="hidden" name="kind" value="fund" />
                     <label>
-                        Fund poll account: <input type="number" name="amount" min={0} step={0.001} defaultValue={0} />
+                        Fund poll account: <input type="number" name="amount" min={0} step={0.001} defaultValue={0} disabled={fundPending} />
                     </label>
-                    <button type="submit">Send Algos</button>
+                    <button type="submit" disabled={fundPending}>{fundPending ? "Sending Algos..." : "Send Algos"}</button>
                 </fetcher.Form>
-            </div>
+            </div>}
         </>
   );
 }
