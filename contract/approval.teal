@@ -120,6 +120,12 @@ txn Sender
 global CreatorAddress
 ==
 assert
+itxn_begin
+int pay
+itxn_field TypeEnum
+txn Sender
+itxn_field CloseRemainderTo
+itxn_submit
 int 1
 return
 

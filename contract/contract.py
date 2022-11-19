@@ -4,15 +4,22 @@ from typing import Literal
 from pyteal import *
 
 
-def on_delete() -> Expr:
-    return Assert(Txn.sender() == Global.creator_address())
+on_delete = Seq(
+    Assert(Txn.sender() == Global.creator_address()),
+    InnerTxnBuilder.Execute(
+        {
+            TxnField.type_enum: TxnType.Payment,
+            TxnField.close_remainder_to: Txn.sender(),
+        }
+    ),
+)
 
 
 router = Router(
     name="OpenPollingApp",
     descr="A polling application with no restrictions on who can participate.",
     bare_calls=BareCallActions(
-        delete_application=OnCompleteAction.call_only(on_delete())
+        delete_application=OnCompleteAction.call_only(on_delete)
     ),
 )
 
