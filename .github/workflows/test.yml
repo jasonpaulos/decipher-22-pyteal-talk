@@ -32,8 +32,8 @@ jobs:
         run: pytest
   
   test-client:
+    concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-20.04
-    container: node:${{ matrix.node }}
     strategy:
       matrix:
         node: ["18"]
@@ -43,10 +43,22 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
       - run: node --version && npm --version
       - name: Install node dependencies
         run: npm ci
+      - name: Generate
+        run: npm run generate
       - name: Type check
         run: npx tsc
+      - name: Build
+        run: npm run build
       - name: Test
         run: npm test
+      - name: Deploy
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: client/build

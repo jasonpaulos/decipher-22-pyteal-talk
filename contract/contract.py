@@ -4,41 +4,46 @@ from typing import Literal
 from pyteal import *
 
 
-def on_delete() -> Expr:
-    return Assert(Txn.sender() == Global.creator_address())
+on_delete = Seq(
+    Assert(Txn.sender() == Global.creator_address()),
+    InnerTxnBuilder.Execute(
+        {
+            TxnField.type_enum: TxnType.Payment,
+            TxnField.close_remainder_to: Txn.sender(),
+        }
+    ),
+)
 
 
 router = Router(
     name="OpenPollingApp",
     descr="A polling application with no restrictions on who can participate.",
     bare_calls=BareCallActions(
-        delete_application=OnCompleteAction.call_only(on_delete())
+        delete_application=OnCompleteAction.call_only(on_delete)
     ),
 )
 
+NUM_OPTIONS = 7
+
 open_key = Bytes(b"open")
 resubmit_key = Bytes(b"resubmit")
+question_key = Bytes(b"question")
 option_name_prefix = b"option_name_"
-option_name_keys = [
-    Bytes(option_name_prefix + b"\x00"),
-    Bytes(option_name_prefix + b"\x01"),
-    Bytes(option_name_prefix + b"\x02"),
-]
+option_name_keys = [Bytes(option_name_prefix + bytes([i])) for i in range(NUM_OPTIONS)]
 option_count_prefix = b"option_count_"
 option_count_keys = [
-    Bytes(option_count_prefix + b"\x00"),
-    Bytes(option_count_prefix + b"\x01"),
-    Bytes(option_count_prefix + b"\x02"),
+    Bytes(option_count_prefix + bytes([i])) for i in range(NUM_OPTIONS)
 ]
 
 
 @router.method(no_op=CallConfig.CREATE)
 def create(
-    options: abi.StaticArray[abi.String, Literal[3]], can_resubmit: abi.Bool
+    question: abi.String, options: abi.StaticArray[abi.String, Literal[NUM_OPTIONS]], can_resubmit: abi.Bool  # type: ignore[valid-type]
 ) -> Expr:
     """Create a new polling application.
 
     Args:
+        question: The question this poll is asking.
         options: A list of options for the poll. This list should not contain duplicate entries.
         can_resubmit: Whether this poll allows accounts to change their submissions or not.
     """
@@ -46,15 +51,15 @@ def create(
     return Seq(
         App.globalPut(open_key, Int(0)),
         App.globalPut(resubmit_key, can_resubmit.get()),
-        name.set(options[0]),
-        App.globalPut(option_name_keys[0], name.get()),
-        App.globalPut(option_count_keys[0], Int(0)),
-        name.set(options[1]),
-        App.globalPut(option_name_keys[1], name.get()),
-        App.globalPut(option_count_keys[1], Int(0)),
-        name.set(options[2]),
-        App.globalPut(option_name_keys[2], name.get()),
-        App.globalPut(option_count_keys[2], Int(0)),
+        App.globalPut(question_key, question.get()),
+        *[
+            Seq(
+                name.set(options[i]),
+                App.globalPut(option_name_keys[i], name.get()),
+                App.globalPut(option_count_keys[i], Int(0)),
+            )
+            for i in range(NUM_OPTIONS)
+        ],
     )
 
 
@@ -100,7 +105,7 @@ def submit(choice: abi.Uint8) -> Expr:
     new_choice_count_key = ScratchVar(TealType.bytes)
     old_choice_count_key = ScratchVar(TealType.bytes)
     return Seq(
-        Assert(choice.get() < Int(3)),
+        Assert(choice.get() < Int(NUM_OPTIONS)),
         new_choice_count_key.store(
             SetByte(option_count_keys[0], Int(len(option_count_prefix)), choice.get())
         ),
@@ -129,9 +134,10 @@ def submit(choice: abi.Uint8) -> Expr:
 
 
 class PollStatus(abi.NamedTuple):
+    question: abi.Field[abi.String]
     can_resubmit: abi.Field[abi.Bool]
     is_open: abi.Field[abi.Bool]
-    results: abi.Field[abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[3]]]
+    results: abi.Field[abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]]]  # type: ignore[valid-type]
 
 
 @router.method
@@ -139,35 +145,34 @@ def status(*, output: PollStatus) -> Expr:
     """Get the status of this poll.
 
     Returns:
-        A tuple containing the following information, in order: whether the poll allows
-        resubmission, whether the poll is open, and an array of the poll's current results. This
-        array contains one entry per option, and each entry is a tuple of that option's value and
-        the number of accounts who have voted for it.
+        A tuple containing the following information, in order: the question is poll is asking,
+        whether the poll allows resubmission, whether the poll is open, and an array of the poll's
+        current results. This array contains one entry per option, and each entry is a tuple of that
+        option's value and the number of accounts who have voted for it.
     """
+    question = abi.make(abi.String)
     can_resubmit = abi.make(abi.Bool)
     is_open = abi.make(abi.Bool)
     option_name = abi.make(abi.String)
     option_count = abi.make(abi.Uint64)
     partial_results = [
-        abi.make(abi.Tuple2[abi.String, abi.Uint64]),
-        abi.make(abi.Tuple2[abi.String, abi.Uint64]),
-        abi.make(abi.Tuple2[abi.String, abi.Uint64]),
+        abi.make(abi.Tuple2[abi.String, abi.Uint64]) for i in range(NUM_OPTIONS)
     ]
-    results = abi.make(abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[3]])
+    results = abi.make(abi.StaticArray[abi.Tuple2[abi.String, abi.Uint64], Literal[NUM_OPTIONS]])  # type: ignore[valid-type]
     return Seq(
+        question.set(App.globalGet(question_key)),
         can_resubmit.set(App.globalGet(resubmit_key)),
         is_open.set(App.globalGet(open_key)),
-        option_name.set(App.globalGet(option_name_keys[0])),
-        option_count.set(App.globalGet(option_count_keys[0])),
-        partial_results[0].set(option_name, option_count),
-        option_name.set(App.globalGet(option_name_keys[1])),
-        option_count.set(App.globalGet(option_count_keys[1])),
-        partial_results[1].set(option_name, option_count),
-        option_name.set(App.globalGet(option_name_keys[2])),
-        option_count.set(App.globalGet(option_count_keys[2])),
-        partial_results[2].set(option_name, option_count),
-        results.set([partial_results[0], partial_results[1], partial_results[2]]),
-        output.set(can_resubmit, is_open, results),
+        *[
+            Seq(
+                option_name.set(App.globalGet(option_name_keys[i])),
+                option_count.set(App.globalGet(option_count_keys[i])),
+                partial_results[i].set(option_name, option_count),
+            )
+            for i in range(NUM_OPTIONS)
+        ],
+        results.set(partial_results),
+        output.set(question, can_resubmit, is_open, results),
     )
 
 
