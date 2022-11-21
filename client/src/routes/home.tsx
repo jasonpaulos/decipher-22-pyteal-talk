@@ -3,6 +3,7 @@ import { Form, ActionFunctionArgs, useNavigation, redirect } from "react-router-
 import * as algosdk from "algosdk";
 import { PollClient, NUM_OPTIONS } from '../pollClient';
 import { getAlgod, getAccount } from './settings';
+import "./home.css"
 
 export async function action({ request }: ActionFunctionArgs) {
     const formData = await request.formData();
@@ -69,43 +70,50 @@ export function Home() {
     }
   return (
     <>
-        <h2>Home</h2>
-        <div>
-            <h2>Join a poll</h2>
-            <Form method="post">
-                <input type="hidden" name="kind" value="join" />
-                <label>
-                    ID: <input type="number" name="appID" min={0} max={Number.MAX_SAFE_INTEGER} required />
-                </label>
-                <button type="submit">Join</button>
-            </Form>
-        </div>
-        <div>
-            <h2>Create a poll</h2>
-            <Form method="post">
-                <input type="hidden" name="kind" value="create" />
-                <p>
-                    <label>
-                    Question: <input type="text" name="question" disabled={creationPending} required />
-                    </label>
-                </p>
-                <fieldset disabled={creationPending}>
-                    <legend>Options:</legend>
-                    {range(NUM_OPTIONS).map((i) => (
-                        <p key={i}>
-                            <label>
-                                Option {i+1}: <input type="text" name={`option${i}`} required />
-                            </label>
-                        </p>
-                    ))}
-                </fieldset>
-                <p>
-                    <label>
-                    Can resubmit: <input type="checkbox" name="resubmit" disabled={creationPending} />
-                    </label>
-                </p>
-                <button type="submit" disabled={creationPending}>{creationPending ? "Creating..." : "Create"}</button>
-            </Form>
+        <h1>Home</h1>
+        <div className="home">
+            <div className="poll-join">
+                <h2>Join a poll</h2>
+                <p>Participate in an existing poll</p>
+                <Form method="post">
+                    <input type="hidden" name="kind" value="join" />
+                    <label htmlFor="appID">ID:</label>
+                    <input type="number" id="appID" name="appID" min={0} max={Number.MAX_SAFE_INTEGER} required />
+                    <button type="submit">Join</button>
+                </Form>
+            </div>
+            <div>
+                <h2>Or</h2>
+            </div>
+            <div className="poll-create">
+                <h2>Create a poll</h2>
+                <p>Create a new poll</p>
+                <Form method="post">
+                    <input type="hidden" name="kind" value="create" />
+                    <p>
+                        <label>
+                        Question: <input type="text" name="question" disabled={creationPending} required />
+                        </label>
+                    </p>
+                    <fieldset disabled={creationPending}>
+                        <legend>Options:</legend>
+                        {range(NUM_OPTIONS).map((i) => (
+                            <p key={i}>
+                                <label>
+                                    Option {i+1}: <input type="text" name={`option${i}`} required />
+                                </label>
+                            </p>
+                        ))}
+                    </fieldset>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="resubmit" disabled={creationPending} />
+                            Resubmission allowed
+                        </label>
+                    </p>
+                    <button type="submit" disabled={creationPending}>{creationPending ? "Creating..." : "Create"}</button>
+                </Form>
+            </div>
         </div>
     </>
   );

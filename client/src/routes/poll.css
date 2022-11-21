@@ -1,0 +1,36 @@
+
+button {
+    margin: 5px;
+}
+
+fieldset {
+    border: 2px groove lightgray;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+fieldset table {
+    margin: 0 auto;
+    text-align: left;
+}
+
+.admin-panel {
+    border: 2px groove lightgray;
+    padding: 10px;
+    margin-left: 30px;
+    margin-right: 30px;
+    margin-bottom: 30px;
+}
+
+.results table {
+    border: 2px groove lightgray;
+    margin: 0 auto;
+}
+
+.results table th {
+    padding: 8px;
+}
+
+.results table tfoot td {
+    padding: 15px;
+}
