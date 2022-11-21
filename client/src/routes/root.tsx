@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, Outlet, useLoaderData } from "react-router-dom";
 import algosdk from 'algosdk';
 import { getAccount, getAlgod } from './settings';
-import '../App.css';
+import './root.css';
 
 export interface RootData {
   account: algosdk.Account,
