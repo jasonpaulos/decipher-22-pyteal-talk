@@ -4,6 +4,8 @@ from typing import Literal
 from pyteal import *
 
 
+pragma("0.20.1")
+
 on_delete = Seq(
     Assert(Txn.sender() == Global.creator_address()),
     InnerTxnBuilder.Execute(
