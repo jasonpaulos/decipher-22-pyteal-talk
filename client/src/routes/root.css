@@ -1,0 +1,45 @@
+.root {
+  text-align: center;
+}
+
+.root-header {
+  background-color: #9fa1a5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  font-size: 16pt;
+  color: white;
+}
+
+@media (max-width: 1000px) {
+  .root-header {
+      flex-direction: column;
+      align-items: flex-start;
+  }
+}
+
+.root-header a, span {
+  margin: 10px;
+  color: black;
+}
+
+.root-header div {
+  flex: 1;
+}
+
+.root-header .account {
+  font-size: 12pt;
+}
+
+.dispenser-request {
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dispenser-request iframe {
+  flex: 1;
+  border: 2px groove lightgray;
+  border-radius: 10px;
+  margin: 5px;
+}

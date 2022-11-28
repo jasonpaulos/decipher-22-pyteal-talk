@@ -152,7 +152,7 @@ export function Settings() {
         <>
             <h2>Settings</h2>
             <div>
-                <h3>Algod</h3>
+                <h3>Node (Algod)</h3>
                 <p>
                     Network: {algodGenesisID}
                 </p>

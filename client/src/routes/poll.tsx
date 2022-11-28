@@ -3,6 +3,7 @@ import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher } fro
 import * as algosdk from "algosdk";
 import { NUM_OPTIONS, PollClient, PollAccountBalance, PollStatus } from '../pollClient';
 import { getAlgod, getAccount } from './settings';
+import './poll.css';
 
 interface PollData {
     client: PollClient,
@@ -120,64 +121,93 @@ export function Poll() {
 
     return (
         <>
-            <p>Poll #{client.appID}</p>
-            <p>Question: {status.question}</p>
+            <h1>Poll #{client.appID}</h1>
+            <h2>Question: {status.question}</h2>
             <p>The poll is {status.isOpen ? "open" : "closed"}.</p>
             <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not "}submit again.`}</p>
             <fetcher.Form method="post">
                 <input type="hidden" name="kind" value="vote" />
                 <fieldset disabled={!votingEnabled || submissionPending}>
                     <legend>Choose an option:</legend>
-                    {
-                        status.results.map(({ option }, index) => (
-                            <div key={`${option}:${index}`}>
-                                <label>
-                                    <input type="radio" name="option" value={index} defaultChecked={submitted === index} />
-                                    {option}
-                                </label>
-                            </div>
-                        ))
-                    }
+                    <table>
+                        {
+                            status.results.map(({ option }, index) => (
+                                <tr key={`${option}:${index}`}>
+                                    <td>
+                                        <input
+                                            type="radio"
+                                            id={`submission:${index}`}
+                                            name="option"
+                                            value={index}
+                                            defaultChecked={submitted === index}
+                                        />
+                                    </td>
+                                    <td>
+                                        <label htmlFor={`submission:${index}`}>{option}</label>
+                                    </td>
+                                </tr>
+                            ))
+                        }
+                    </table>
                 </fieldset>
                 <button type="submit" disabled={!votingEnabled || submissionPending}>{submissionPending ? "Submitting..." : "Submit"}</button>
             </fetcher.Form>
-            <div hidden={submitted === undefined}>
-                <p>Results</p>
-                {
-                    status.results.map(({ option, count }, index) => (
-                        <div key={`${option}:${index}:${count}`}>
-                            <p>{option}: {count} ({(100*count/totalSubmissions).toFixed(0)}%)</p>
-                        </div>
-                    ))
-                }
-                <p>Total submissions: {totalSubmissions}</p>
+            <div className="results" hidden={submitted === undefined}>
+                <table>
+                    <caption><h2>Results</h2></caption>
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Submission Count</th>
+                            <th>Submission Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            status.results.map(({ option, count }, index) => (
+                                <tr key={`${option}:${index}:${count}`}>
+                                    <td>{option}</td>
+                                    <td>{count}</td>
+                                    <td>{(100*count/totalSubmissions).toFixed(0)}%</td>
+                                </tr>
+                            ))
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colSpan={3}>Total submissions: {totalSubmissions}</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
             {status.isAdmin && !!balance && <div>
-                <p>Admin Panel</p>
-                <fetcher.Form method="post">
-                    <input type="hidden" name="kind" value="open" />
-                    <button type="submit" disabled={status.isOpen || openPending}>{openPending ? "Opening..." : "Open"}</button>
-                </fetcher.Form>
-                <fetcher.Form method="post">
-                    <input type="hidden" name="kind" value="close" />
-                    <button type="submit" disabled={!status.isOpen || closePending}>{closePending ? "Closing..." : "Close"}</button>
-                </fetcher.Form>
-                <p>
-                    Poll account balance: {algosdk.microalgosToAlgos(balance.balance)} Algos
-                </p>
-                <p>
-                    Poll account minimum balance: {algosdk.microalgosToAlgos(balance.minBalance)} Algos
-                </p>
-                <p>
-                    Poll account boxes: {balance.numBoxes} boxes, {balance.boxBytes} total bytes
-                </p>
-                <fetcher.Form method="post">
-                    <input type="hidden" name="kind" value="fund" />
-                    <label>
-                        Fund poll account: <input type="number" name="amount" min={0} step={0.001} defaultValue={0} disabled={fundPending} />
-                    </label>
-                    <button type="submit" disabled={fundPending}>{fundPending ? "Sending Algos..." : "Send Algos"}</button>
-                </fetcher.Form>
+                <h2>Admin Panel</h2>
+                    <div className="admin-panel">
+                    <fetcher.Form method="post">
+                        <input type="hidden" name="kind" value="open" />
+                        <button type="submit" disabled={status.isOpen || openPending}>{openPending ? "Opening..." : "Open"}</button>
+                    </fetcher.Form>
+                    <fetcher.Form method="post">
+                        <input type="hidden" name="kind" value="close" />
+                        <button type="submit" disabled={!status.isOpen || closePending}>{closePending ? "Closing..." : "Close"}</button>
+                    </fetcher.Form>
+                    <p>
+                        Poll account balance: {algosdk.microalgosToAlgos(balance.balance)} Algos
+                    </p>
+                    <p>
+                        Poll account minimum balance: {algosdk.microalgosToAlgos(balance.minBalance)} Algos
+                    </p>
+                    <p>
+                        Poll account boxes: {balance.numBoxes} boxes, {balance.boxBytes} total bytes
+                    </p>
+                    <fetcher.Form method="post">
+                        <input type="hidden" name="kind" value="fund" />
+                        <label>
+                            Fund poll account: <input type="number" name="amount" min={0} step={0.001} defaultValue={0} disabled={fundPending} />
+                        </label>
+                        <button type="submit" disabled={fundPending}>{fundPending ? "Sending Algos..." : "Send Algos"}</button>
+                    </fetcher.Form>
+                </div>
             </div>}
         </>
   );
