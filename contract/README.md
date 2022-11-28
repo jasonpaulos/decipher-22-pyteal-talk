@@ -34,3 +34,7 @@ Type checking using mypy:
 Run unit tests:
 
 * `pytest`
+
+Run the decipher jupyter notebook (assuming your working directory is the `contract` folder):
+
+* jupyter-lab ../slides.ipynb
