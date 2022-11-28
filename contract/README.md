@@ -35,6 +35,6 @@ Run unit tests:
 
 * `pytest`
 
-Run the decipher jupyter notebook (assuming your workign director is the `contract` folder):
+Run the decipher jupyter notebook (assuming your working directory is the `contract` folder):
 
 * jupyter-lab ../slides.ipynb
