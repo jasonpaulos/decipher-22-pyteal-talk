@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher } from "react-router-dom";
+import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher, useRouteLoaderData } from "react-router-dom";
 import QRCode from "react-qr-code";
 import * as algosdk from "algosdk";
 import { NUM_OPTIONS, PollClient, PollAccountBalance, PollStatus } from '../pollClient';
 import { getAlgod, getAccount } from './settings';
+import { RootData } from './root';
 import './poll.css';
 
 interface PollData {
@@ -91,10 +92,11 @@ function fundPoll(client: PollClient, data: FormData) {
 }
 
 export function Poll() {
-    const { client, status, submitted, balance } = useLoaderData() as PollData;
+    const { client, status, submitted, balance: pollBalance } = useLoaderData() as PollData;
+    const { balance: accountBalance } = useRouteLoaderData('root') as RootData;
     const fetcher = useFetcher();
     const [showQR, setShowQR] = useState(false);
-    const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
+    const votingEnabled = !!accountBalance && status.isOpen && (submitted === undefined || status.canResubmit);
     const totalSubmissions = status.results.map(({count}) => count).reduce((a, b) => a + b, 0);
 
     let submissionPending = false;
@@ -186,7 +188,7 @@ export function Poll() {
                     </tfoot>
                 </table>
             </div>
-            {status.isAdmin && !!balance && <div>
+            {status.isAdmin && !!pollBalance && <div>
                 <h2>Admin Panel</h2>
                     <div className="admin-panel">
                     <fetcher.Form method="post">
@@ -198,13 +200,13 @@ export function Poll() {
                         <button type="submit" disabled={!status.isOpen || closePending}>{closePending ? "Closing..." : "Close"}</button>
                     </fetcher.Form>
                     <p>
-                        Poll account balance: {algosdk.microalgosToAlgos(balance.balance)} Algos
+                        Poll account balance: {algosdk.microalgosToAlgos(pollBalance.balance)} Algos
                     </p>
                     <p>
-                        Poll account minimum balance: {algosdk.microalgosToAlgos(balance.minBalance)} Algos
+                        Poll account minimum balance: {algosdk.microalgosToAlgos(pollBalance.minBalance)} Algos
                     </p>
                     <p>
-                        Poll account boxes: {balance.numBoxes} boxes, {balance.boxBytes} total bytes
+                        Poll account boxes: {pollBalance.numBoxes} boxes, {pollBalance.boxBytes} total bytes
                     </p>
                     <fetcher.Form method="post">
                         <input type="hidden" name="kind" value="fund" />

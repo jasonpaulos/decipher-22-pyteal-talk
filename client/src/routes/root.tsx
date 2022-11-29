@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link, Outlet, useLoaderData } from "react-router-dom";
 import algosdk from 'algosdk';
 import { getAccount, getAlgod } from './settings';
@@ -26,8 +26,7 @@ function addressPreview(addr: string): string {
 }
 
 export function Root() {
-  const { account, balance: initialBalance } = useLoaderData() as RootData;
-  const [balance, setBalance] = useState(initialBalance);
+  const { account, balance } = useLoaderData() as RootData;
 
   useEffect(() => {
     const delay = 5000;
@@ -45,7 +44,7 @@ export function Root() {
         const newBalance = info["amount"] as number;
 
         if (newBalance) {
-          setBalance(newBalance);
+          window.location.reload();
         } else {
           setTimeout(refreshBalance, delay);
         }
