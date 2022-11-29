@@ -34,3 +34,8 @@ fieldset table {
 .results table tfoot td {
     padding: 15px;
 }
+
+.qr-container {
+    background: white;
+    padding: 32px;
+}

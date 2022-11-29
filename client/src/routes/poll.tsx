@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActionFunctionArgs, LoaderFunctionArgs, useLoaderData, useFetcher } from "react-router-dom";
+import QRCode from "react-qr-code";
 import * as algosdk from "algosdk";
 import { NUM_OPTIONS, PollClient, PollAccountBalance, PollStatus } from '../pollClient';
 import { getAlgod, getAccount } from './settings';
@@ -92,6 +93,7 @@ function fundPoll(client: PollClient, data: FormData) {
 export function Poll() {
     const { client, status, submitted, balance } = useLoaderData() as PollData;
     const fetcher = useFetcher();
+    const [showQR, setShowQR] = useState(false);
     const votingEnabled = status.isOpen && (submitted === undefined || status.canResubmit);
     const totalSubmissions = status.results.map(({count}) => count).reduce((a, b) => a + b, 0);
 
@@ -123,6 +125,10 @@ export function Poll() {
         <>
             <h1>Poll #{client.appID}</h1>
             <h2>Question: {status.question}</h2>
+            <button onClick={() => setShowQR(!showQR)}>{showQR ? "Hide" : "Show"} QR Code</button>
+            <div className="qr-container" hidden={!showQR}>
+                <QRCode value={window.location.href} />
+            </div>
             <p>The poll is {status.isOpen ? "open" : "closed"}.</p>
             <p>{submitted === undefined ? "You have not yet voted in this poll." : `You have already voted in this poll. You may ${ status.canResubmit ? "" : "not "}submit again.`}</p>
             <fetcher.Form method="post">
