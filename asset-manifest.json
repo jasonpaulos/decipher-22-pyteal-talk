@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/decipher-22-pyteal-talk/static/css/main.2624f5bc.css",
-    "main.js": "/decipher-22-pyteal-talk/static/js/main.336e105e.js",
+    "main.css": "/decipher-22-pyteal-talk/static/css/main.fb154561.css",
+    "main.js": "/decipher-22-pyteal-talk/static/js/main.81134a45.js",
     "static/js/787.2e703716.chunk.js": "/decipher-22-pyteal-talk/static/js/787.2e703716.chunk.js",
     "index.html": "/decipher-22-pyteal-talk/index.html",
-    "main.2624f5bc.css.map": "/decipher-22-pyteal-talk/static/css/main.2624f5bc.css.map",
-    "main.336e105e.js.map": "/decipher-22-pyteal-talk/static/js/main.336e105e.js.map",
+    "main.fb154561.css.map": "/decipher-22-pyteal-talk/static/css/main.fb154561.css.map",
+    "main.81134a45.js.map": "/decipher-22-pyteal-talk/static/js/main.81134a45.js.map",
     "787.2e703716.chunk.js.map": "/decipher-22-pyteal-talk/static/js/787.2e703716.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.2624f5bc.css",
-    "static/js/main.336e105e.js"
+    "static/css/main.fb154561.css",
+    "static/js/main.81134a45.js"
   ]
 }
