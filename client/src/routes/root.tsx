@@ -65,7 +65,7 @@ export function Root() {
         <Link to="/settings">Settings</Link>
         <a href="https://github.com/jasonpaulos/decipher-22-pyteal-talk">GitHub</a>
         <div></div>
-        <span>Account: {addressPreview(account.addr)}</span>
+        <span title={account.addr}>Account: {addressPreview(account.addr)}</span>
       </nav>
       {!balance && <div className="dispenser-request">
             <p>
