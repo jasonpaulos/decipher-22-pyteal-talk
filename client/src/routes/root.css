@@ -11,7 +11,7 @@
   color: white;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 800px) {
   .root-header {
       flex-direction: column;
       align-items: flex-start;
@@ -25,10 +25,6 @@
 
 .root-header div {
   flex: 1;
-}
-
-.root-header .account {
-  font-size: 12pt;
 }
 
 .dispenser-request {
